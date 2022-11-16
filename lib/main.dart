@@ -1,10 +1,13 @@
 // import 'dart:html';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/FLAG.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,9 +18,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statuses = [
-      Permission.storage,
-    ].request();
+    // final statuses = [
+    //   Permission.storage,
+    // ].request();
+
+    Permission.storage.request();
 
     SystemChrome.setEnabledSystemUIOverlays([]);
     return const MaterialApp(
@@ -80,11 +85,15 @@ class HomeWidget extends StatelessWidget {
     var x = details.globalPosition.dx;
     var y = details.globalPosition.dy;
     print(details.localPosition);
-    int dx = (x / 80).floor();
-    int dy = ((y - 180) / 100).floor();
-    int posicao = dy * 5 + dx;
+    int dx = (x / 360).floor();
+    int dy = (y / 480).floor();
+    int posicao = dy * 2 + dx + 1;
 
-    print("results: x =$x y=$y $dx $dx $posicao");
+    if (posicao == 5 || posicao == 6) {
+      posicao = 5;
+    }
+
+    print("results: x =$x y=$y $dx $dx posicao $posicao");
 
     _save(posicao);
   }
@@ -93,13 +102,18 @@ class HomeWidget extends StatelessWidget {
     var appDocDir = await getTemporaryDirectory();
     String savePath = appDocDir.path + "/efeito-$posicao.jpg";
     print(savePath);
-    // await Dio().download(
 
-    // )
+    // print(
+    //     "https://github.com/PauloWarley/magic_app/tree/main/github-images/image$posicao.jpg");
+
+    await Dio().download(
+      "https://github.com/PauloWarley/magic_app/blob/main/github-images/image$posicao.jpg?raw=true",
+      savePath,
+    );
 
     print("Saved!");
-    // final result = await ImageGallerySaver.saveFile(savePath);
-    // print(result);
+    final result = await ImageGallerySaver.saveFile(savePath);
+    print(result);
   }
 }
 
@@ -114,17 +128,19 @@ class PhotosWidget extends StatelessWidget {
       ),
     );
     return new GestureDetector(
-      onTapDown: _onTapDown,
+      onTapDown: _openGallery,
       child: children,
     );
   }
 
-  _onTapDown(TapDownDetails details) {
-    var x = details.globalPosition.dx;
-    var y = details.globalPosition.dy;
-    print(details.localPosition);
-    int dx = (x / 80).floor();
-    int dy = ((y - 180) / 100).floor();
+  _openGallery(TapDownDetails details) async {
+    print("Opening");
+    AndroidIntent intent = AndroidIntent(
+      action: 'action_view',
+      type: 'image/*',
+      flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+    );
+    await intent.launch();
   }
 }
 
